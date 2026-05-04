@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活動グラフ | Health Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+          integrity="sha256-DiMmxoaAcr7BWSdgxnKQQ8ruopYKK0bO5qIZKqxqv/A="
+          crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; color: #333; }
+    header {
+      background: #2c6fad; color: #fff; padding: 12px 20px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.2rem; }
+    nav a {
+      color: #cde; text-decoration: none; font-size: 0.95rem; padding: 4px 10px;
+      border-radius: 4px;
+    }
+    nav a:hover, nav a.active { background: rgba(255,255,255,0.2); color: #fff; }
+    main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .card {
+      background: #fff; border-radius: 8px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1rem; color: #555; margin-bottom: 12px; }
+    .period-btns { display: flex; gap: 8px; margin-bottom: 16px; }
+    .period-btns button {
+      padding: 4px 14px; border: 1px solid #2c6fad; border-radius: 4px;
+      background: #fff; color: #2c6fad; cursor: pointer; font-size: 0.9rem;
+    }
+    .period-btns button.active { background: #2c6fad; color: #fff; }
+    canvas { width: 100% !important; }
+    .no-data { color: #aaa; text-align: center; padding: 40px 0; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Health Dashboard</h1>
+  <nav>
+    <a href="index.html">サマリー</a>
+    <a href="weight.html">体重</a>
+    <a href="activity.html" class="active">活動</a>
+    <a href="sleep.html">睡眠</a>
+  </nav>
+</header>
+<main>
+  <div class="card">
+    <h2>歩数・消費カロリー</h2>
+    <div class="period-btns">
+      <button onclick="render(7)" id="btn-7" class="active">1週間</button>
+      <button onclick="render(30)" id="btn-30">1ヶ月</button>
+      <button onclick="render(90)" id="btn-90">3ヶ月</button>
+    </div>
+    <canvas id="chart" height="300"></canvas>
+    <p class="no-data" id="no-data" style="display:none">データがありません</p>
+  </div>
+</main>
+
+<script>
+let allData = [];
+let chart = null;
+
+function render(days) {
+  ["7","30","90"].forEach(d => {
+    document.getElementById("btn-"+d).classList.toggle("active", String(days) === d);
+  });
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days + 1);
+  const cutoffStr = cutoff.toLocaleDateString('sv-SE');
+  const data = allData.filter(d => d.date >= cutoffStr);
+
+  document.getElementById("no-data").style.display = data.length ? "none" : "";
+  if (chart) chart.destroy();
+  if (!data.length) return;
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: "bar",
+    data: {
+      labels: data.map(d => d.date),
+      datasets: [
+        {
+          label: "歩数",
+          data: data.map(d => d.steps),
+          backgroundColor: "rgba(44,111,173,0.7)",
+          yAxisID: "y",
+        },
+        {
+          label: "消費カロリー (kcal)",
+          data: data.map(d => d.active_calories),
+          backgroundColor: "rgba(255,140,0,0.7)",
+          yAxisID: "y2",
+          type: "line",
+          borderColor: "rgba(255,140,0,1)",
+          tension: 0.3,
+          pointRadius: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { title: { display: true, text: "歩数" }, position: "left" },
+        y2: { title: { display: true, text: "kcal" }, position: "right", grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+}
+
+fetch("data/activity.json")
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => { allData = data; render(7); })
+  .catch(() => {
+    document.getElementById("no-data").textContent = "データの取得に失敗しました";
+    document.getElementById("no-data").style.display = "";
+  });
+</script>
+</body>
+</html>

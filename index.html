@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>サマリー | Health Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+          integrity="sha256-DiMmxoaAcr7BWSdgxnKQQ8ruopYKK0bO5qIZKqxqv/A="
+          crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; color: #333; }
+    header {
+      background: #2c6fad; color: #fff; padding: 12px 20px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.2rem; }
+    nav a {
+      color: #cde; text-decoration: none; font-size: 0.95rem; padding: 4px 10px;
+      border-radius: 4px;
+    }
+    nav a:hover, nav a.active { background: rgba(255,255,255,0.2); color: #fff; }
+    main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .card {
+      background: #fff; border-radius: 8px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1rem; color: #555; margin-bottom: 12px; }
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;
+    }
+    .summary-item { text-align: center; }
+    .summary-item .value { font-size: 2rem; font-weight: bold; color: #2c6fad; }
+    .summary-item .label { font-size: 0.85rem; color: #888; margin-top: 4px; }
+    .summary-item .unit { font-size: 1rem; color: #555; }
+    .no-data { color: #aaa; text-align: center; padding: 40px 0; }
+    .updated { font-size: 0.8rem; color: #aaa; text-align: right; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Health Dashboard</h1>
+  <nav>
+    <a href="index.html" class="active">サマリー</a>
+    <a href="weight.html">体重</a>
+    <a href="activity.html">活動</a>
+    <a href="sleep.html">睡眠</a>
+  </nav>
+</header>
+<main>
+  <div class="card">
+    <h2>今日のサマリー</h2>
+    <p class="no-data" id="summary-error" style="display:none">データの取得に失敗しました</p>
+    <div class="summary-grid" id="summary-grid">
+      <div class="summary-item">
+        <div class="value" id="val-weight">--</div>
+        <div class="label">体重</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="val-steps">--</div>
+        <div class="label">歩数</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="val-calories">--</div>
+        <div class="label">消費カロリー（活動）</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="val-heart">--</div>
+        <div class="label">安静時心拍数</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="val-sleep">--</div>
+        <div class="label">昨夜の睡眠</div>
+      </div>
+    </div>
+    <p class="updated" id="updated"></p>
+  </div>
+</main>
+
+<script>
+fetch("data/summary.json")
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    document.getElementById("val-weight").innerHTML =
+      d.weight_kg != null ? `${d.weight_kg} <span class="unit">kg</span>` : "--";
+    document.getElementById("val-steps").innerHTML =
+      d.steps != null ? `${Number(d.steps).toLocaleString()} <span class="unit">歩</span>` : "--";
+    document.getElementById("val-calories").innerHTML =
+      d.active_calories != null ? `${d.active_calories} <span class="unit">kcal</span>` : "--";
+    document.getElementById("val-heart").innerHTML =
+      d.resting_heart_rate != null ? `${d.resting_heart_rate} <span class="unit">bpm</span>` : "--";
+    document.getElementById("val-sleep").innerHTML =
+      d.sleep_hours != null ? `${d.sleep_hours} <span class="unit">時間</span>` : "--";
+    document.getElementById("updated").textContent = `データ日付: ${d.date}`;
+  })
+  .catch(() => {
+    document.getElementById("summary-error").style.display = "";
+  });
+</script>
+</body>
+</html>
