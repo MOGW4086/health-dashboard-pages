@@ -44,6 +44,10 @@
         <div class="value" id="val-sleep">--</div>
         <div class="label">昨夜の睡眠</div>
       </div>
+      <div class="summary-item">
+        <div class="value" id="val-snoring">--</div>
+        <div class="label">いびきスコア</div>
+      </div>
     </div>
     <p class="updated" id="updated"></p>
   </div>
@@ -63,6 +67,8 @@ fetch("data/summary.json")
       d.resting_heart_rate != null ? `${d.resting_heart_rate} <span class="unit">bpm</span>` : "--";
     document.getElementById("val-sleep").innerHTML =
       d.sleep_hours != null ? `${d.sleep_hours} <span class="unit">時間</span>` : "--";
+    document.getElementById("val-snoring").innerHTML =
+      d.snoring_score != null ? `${d.snoring_score} <span class="unit">点</span>` : "--";
     document.getElementById("updated").textContent = `データ日付: ${d.date}`;
   })
   .catch(() => {

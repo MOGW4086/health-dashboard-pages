@@ -30,11 +30,17 @@
     <canvas id="sleep-chart" height="300"></canvas>
     <p class="no-data" id="no-data" style="display:none">データがありません</p>
   </div>
+  <div class="card">
+    <h2>いびきスコア推移</h2>
+    <canvas id="snoring-chart" height="300"></canvas>
+    <p class="no-data" id="no-data-snoring" style="display:none">データがありません</p>
+  </div>
 </main>
 
 <script>
 let allData = [];
 let chart = null;
+let snoringChart = null;
 
 function render(days) {
   ["7","30","90"].forEach(d => {
@@ -46,25 +52,51 @@ function render(days) {
   const data = allData.filter(d => d.date >= cutoffStr);
 
   document.getElementById("no-data").style.display = data.length ? "none" : "";
-  if (chart) chart.destroy();
-  if (!data.length) return;
+  if (chart) { chart.destroy(); chart = null; }
+  if (data.length) {
+    chart = new Chart(document.getElementById("sleep-chart"), {
+      type: "bar",
+      data: {
+        labels: data.map(d => d.date),
+        datasets: [{
+          label: "睡眠時間 (h)",
+          data: data.map(d => d.sleep_hours),
+          backgroundColor: "rgba(90,60,160,0.7)",
+        }],
+      },
+      options: {
+        responsive: true,
+        scales: { y: { title: { display: true, text: "時間" }, beginAtZero: true, max: 12 } },
+        plugins: { legend: { display: false } },
+      },
+    });
+  }
 
-  chart = new Chart(document.getElementById("sleep-chart"), {
-    type: "bar",
-    data: {
-      labels: data.map(d => d.date),
-      datasets: [{
-        label: "睡眠時間 (h)",
-        data: data.map(d => d.sleep_hours),
-        backgroundColor: "rgba(90,60,160,0.7)",
-      }],
-    },
-    options: {
-      responsive: true,
-      scales: { y: { title: { display: true, text: "時間" }, beginAtZero: true, max: 12 } },
-      plugins: { legend: { display: false } },
-    },
-  });
+  const snoringData = data.filter(d => d.snoring_score != null);
+  document.getElementById("no-data-snoring").style.display = snoringData.length ? "none" : "";
+  if (snoringChart) { snoringChart.destroy(); snoringChart = null; }
+  if (snoringData.length) {
+    snoringChart = new Chart(document.getElementById("snoring-chart"), {
+      type: "line",
+      data: {
+        labels: snoringData.map(d => d.date),
+        datasets: [{
+          label: "いびきスコア",
+          data: snoringData.map(d => d.snoring_score),
+          borderColor: "rgba(60,160,90,0.9)",
+          backgroundColor: "rgba(60,160,90,0.15)",
+          pointRadius: 4,
+          tension: 0.3,
+          fill: true,
+        }],
+      },
+      options: {
+        responsive: true,
+        scales: { y: { title: { display: true, text: "スコア" }, beginAtZero: true } },
+        plugins: { legend: { display: false } },
+      },
+    });
+  }
 }
 
 fetch("data/sleep.json")
@@ -73,6 +105,8 @@ fetch("data/sleep.json")
   .catch(() => {
     document.getElementById("no-data").textContent = "データの取得に失敗しました";
     document.getElementById("no-data").style.display = "";
+    document.getElementById("no-data-snoring").textContent = "データの取得に失敗しました";
+    document.getElementById("no-data-snoring").style.display = "";
   });
 </script>
 </body>
