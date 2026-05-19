@@ -21,58 +21,110 @@
 </header>
 <main>
   <div class="card">
-    <h2>今日のサマリー</h2>
-    <p class="no-data" id="summary-error" style="display:none">データの取得に失敗しました</p>
-    <div class="summary-grid" id="summary-grid">
+    <h2>今日のサマリー <span id="label-today" style="font-size:0.75em;color:#888;font-weight:normal;"></span></h2>
+    <p class="no-data" id="error-today" style="display:none">データの取得に失敗しました</p>
+    <div class="summary-grid">
       <div class="summary-item">
-        <div class="value" id="val-weight">--</div>
+        <div class="value" id="today-weight">--</div>
         <div class="label">体重</div>
       </div>
       <div class="summary-item">
-        <div class="value" id="val-steps">--</div>
+        <div class="value" id="today-steps">--</div>
         <div class="label">歩数</div>
       </div>
       <div class="summary-item">
-        <div class="value" id="val-calories">--</div>
+        <div class="value" id="today-calories">--</div>
         <div class="label">消費カロリー（活動）</div>
       </div>
       <div class="summary-item">
-        <div class="value" id="val-heart">--</div>
+        <div class="value" id="today-heart">--</div>
         <div class="label">安静時心拍数</div>
       </div>
       <div class="summary-item">
-        <div class="value" id="val-sleep">--</div>
+        <div class="value" id="today-sleep">--</div>
         <div class="label">昨夜の睡眠</div>
       </div>
       <div class="summary-item">
-        <div class="value" id="val-snoring">--</div>
+        <div class="value" id="today-snoring">--</div>
         <div class="label">いびきスコア</div>
       </div>
     </div>
-    <p class="updated" id="updated"></p>
+    <p class="updated" id="updated-today"></p>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;">
+    <h2>昨日のサマリー <span id="label-yesterday" style="font-size:0.75em;color:#888;font-weight:normal;"></span></h2>
+    <p class="no-data" id="error-yesterday" style="display:none">データの取得に失敗しました</p>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="value" id="yday-weight">--</div>
+        <div class="label">体重</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="yday-steps">--</div>
+        <div class="label">歩数</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="yday-calories">--</div>
+        <div class="label">消費カロリー（活動）</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="yday-heart">--</div>
+        <div class="label">安静時心拍数</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="yday-sleep">--</div>
+        <div class="label">前夜の睡眠</div>
+      </div>
+      <div class="summary-item">
+        <div class="value" id="yday-snoring">--</div>
+        <div class="label">いびきスコア</div>
+      </div>
+    </div>
+    <p class="updated" id="updated-yesterday"></p>
   </div>
 </main>
 
 <script>
-fetch("data/summary.json")
+function setVal(id, value, unit) {
+  const el = document.getElementById(id);
+  if (value != null) {
+    el.textContent = String(value) + ' ';
+    const u = document.createElement('span');
+    u.className = 'unit';
+    u.textContent = unit;
+    el.appendChild(u);
+  } else {
+    el.textContent = '--';
+  }
+}
+
+function fillSummary(d, prefix, updatedId, labelId) {
+  setVal(prefix + '-weight', d.weight_kg, 'kg');
+  setVal(prefix + '-steps', d.steps != null ? Number(d.steps).toLocaleString() : null, '歩');
+  setVal(prefix + '-calories', d.active_calories, 'kcal');
+  setVal(prefix + '-heart', d.resting_heart_rate, 'bpm');
+  setVal(prefix + '-sleep', d.sleep_hours, '時間');
+  setVal(prefix + '-snoring', d.snoring_score, '点');
+  document.getElementById(updatedId).textContent = `データ日付: ${d.date}`;
+  // 日付ラベルはJSONのd.dateから生成（クライアント時刻と一致させるため）
+  const dt = new Date(d.date + 'T00:00:00');
+  document.getElementById(labelId).textContent =
+    `(${dt.toLocaleDateString('ja-JP', {month: 'long', day: 'numeric'})})`;
+}
+
+fetch('data/summary.json')
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d => {
-    document.getElementById("val-weight").innerHTML =
-      d.weight_kg != null ? `${d.weight_kg} <span class="unit">kg</span>` : "--";
-    document.getElementById("val-steps").innerHTML =
-      d.steps != null ? `${Number(d.steps).toLocaleString()} <span class="unit">歩</span>` : "--";
-    document.getElementById("val-calories").innerHTML =
-      d.active_calories != null ? `${d.active_calories} <span class="unit">kcal</span>` : "--";
-    document.getElementById("val-heart").innerHTML =
-      d.resting_heart_rate != null ? `${d.resting_heart_rate} <span class="unit">bpm</span>` : "--";
-    document.getElementById("val-sleep").innerHTML =
-      d.sleep_hours != null ? `${d.sleep_hours} <span class="unit">時間</span>` : "--";
-    document.getElementById("val-snoring").innerHTML =
-      d.snoring_score != null ? `${d.snoring_score} <span class="unit">点</span>` : "--";
-    document.getElementById("updated").textContent = `データ日付: ${d.date}`;
-  })
+  .then(d => fillSummary(d, 'today', 'updated-today', 'label-today'))
   .catch(() => {
-    document.getElementById("summary-error").style.display = "";
+    document.getElementById('error-today').style.display = '';
+  });
+
+fetch('data/summary_yesterday.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => fillSummary(d, 'yday', 'updated-yesterday', 'label-yesterday'))
+  .catch(() => {
+    document.getElementById('error-yesterday').style.display = '';
   });
 </script>
 </body>
